@@ -7,6 +7,46 @@ from .models import Poll, Choice, Vote
 from .forms import PollAddForm, EditPollForm, ChoiceAddForm
 from django.http import HttpResponse
 
+from django.shortcuts import render
+
+from django.http import HttpResponse
+
+from django.template.loader import get_template
+
+from xhtml2pdf import pisa
+
+# Create your views here.
+
+
+
+def pdf_report_create(request, poll_id):
+    poll = get_object_or_404(Poll, id=poll_id)
+
+    if not poll.active:
+        return render(request, 'polls/poll_result.html', {'poll': poll})
+    loop_count = poll.choice_set.count()
+
+    template_path = 'pdfReport.html'
+
+    context = {'poll': poll,
+        'loop_time': range(0, loop_count),}
+
+    response = HttpResponse(content_type='application/pdf')
+
+    response['Content-Disposition'] = 'filename="products_report.pdf"'
+
+    template = get_template(template_path)
+
+    html = template.render(context)
+
+    # create a pdf
+    pisa_status = pisa.CreatePDF(
+       html, dest=response)
+    # if error then show some funy view
+    if pisa_status.err:
+       return HttpResponse('We had some errors <pre>' + html + '</pre>')
+    return response
+
 
 @login_required()
 def polls_list(request):
